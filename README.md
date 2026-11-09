@@ -6,7 +6,7 @@ the full length of the river.
 
 ## Live deployment
 
-Unlike the other tools in this repo, this one is hosted on a different server —
+Unlike the Blue Horizon Sailing tools, this one is hosted on a different server —
 GBR, not the Blue Horizon Sailing site:
 
 ```
