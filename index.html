@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>East River — Passage Timing</title>
+<style>
+  @font-face {
+    font-family: 'system-serif';
+    src: local('Georgia');
+  }
+  :root{
+    --navy:#0c2436;
+    --navy-2:#123049;
+    --paper:#f1e9d8;
+    --paper-dim:#d9cdaf;
+    --brass:#b8874a;
+    --brass-bright:#d9a862;
+    --flood:#5a8f7b;
+    --ebb:#b4573f;
+    --ink:#1c2b2f;
+    --line: rgba(241,233,216,0.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #14324a 0%, transparent 60%),
+      linear-gradient(180deg, var(--navy) 0%, #091a28 100%);
+    color:var(--paper);
+    font-family: 'Iowan Old Style','Palatino Linotype', Georgia, 'Times New Roman', serif;
+    min-height:100vh;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+
+  header{
+    border-bottom:1px solid var(--line);
+    padding-bottom:22px;
+    margin-bottom:28px;
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'Courier New', monospace;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:16px;
+    color:var(--brass-bright);
+    margin:0 0 10px;
+  }
+  h1{
+    font-size:clamp(28px,4.5vw,42px);
+    margin:0 0 8px;
+    font-weight:400;
+    letter-spacing:.01em;
+    color:var(--paper);
+  }
+  h1 em{ font-style:italic; color:var(--brass-bright); }
+  .sub{
+    font-family:'Courier New', monospace;
+    font-size:17px;
+    color:var(--paper-dim);
+    max-width:640px;
+    line-height:1.5;
+  }
+  .compass{
+    position:absolute; right:0; top:0;
+    width:64px; height:64px; opacity:.55;
+  }
+
+  section{margin-bottom:34px;}
+  .section-title{
+    font-family:'Courier New', monospace;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:16px;
+    color:var(--brass-bright);
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:14px;
+  }
+  .section-title::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .step-no{
+    font-family:'Courier New', monospace;
+    font-size:14px;
+    color:var(--navy);
+    background:var(--brass-bright);
+    width:20px;height:20px;
+    border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+
+  .panel{
+    background:linear-gradient(180deg, rgba(241,233,216,.05), rgba(241,233,216,.02));
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:20px 22px;
+  }
+
+  .row{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;}
+  label{
+    font-family:'Courier New', monospace;
+    font-size:15px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+    display:block;
+    margin-bottom:6px;
+  }
+  input[type=date], input[type=time], select{
+    background:rgba(9,26,40,.6);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    padding:8px 10px;
+    border-radius:2px;
+  }
+  input[type=date]:focus, input[type=time]:focus, select:focus{
+    outline:2px solid var(--brass-bright);
+    outline-offset:1px;
+  }
+  button{
+    font-family:'Courier New', monospace;
+    font-size:15px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--brass);
+    color:var(--brass-bright);
+    padding:9px 14px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  button:hover{ background:var(--brass); color:var(--navy); }
+  button:focus-visible{ outline:2px solid var(--paper); outline-offset:2px; }
+  button.ghost{ border-color:var(--line); color:var(--paper-dim); }
+  button.ghost:hover{ background:rgba(241,233,216,.08); color:var(--paper); }
+  button.tiny{ padding:4px 8px; font-size:13px; }
+  button:disabled{ opacity:.4; cursor:default; }
+
+  .fetch-status{
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    color:var(--paper-dim);
+    margin-top:10px;
+    min-height:16px;
+  }
+  .fetch-status.ok{ color:var(--flood); }
+  .fetch-status.err{ color:var(--ebb); }
+
+  table.evt{ width:100%; border-collapse:collapse; margin-top:14px; }
+  table.evt th{
+    text-align:left;
+    font-family:'Courier New', monospace;
+    font-size:14px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+    border-bottom:1px solid var(--line);
+    padding:6px 8px;
+    font-weight:400;
+  }
+  table.evt td{
+    padding:6px 8px;
+    border-bottom:1px solid rgba(241,233,216,.06);
+    vertical-align:middle;
+  }
+  .badge{
+    display:inline-block;
+    font-family:'Courier New', monospace;
+    font-size:13px;
+    letter-spacing:.05em;
+    padding:2px 7px;
+    border-radius:10px;
+  }
+  .badge.H{ background:rgba(90,143,123,.18); color:var(--flood); border:1px solid rgba(90,143,123,.4);}
+  .badge.L{ background:rgba(180,87,63,.18); color:var(--ebb); border:1px solid rgba(180,87,63,.4);}
+  .badge.F{ background:rgba(90,143,123,.18); color:var(--flood); border:1px solid rgba(90,143,123,.4);}
+  .badge.E{ background:rgba(180,87,63,.18); color:var(--ebb); border:1px solid rgba(180,87,63,.4);}
+
+  .dow{
+    display:inline-block;
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    letter-spacing:.04em;
+    color:var(--paper-dim);
+    padding:6px 10px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    min-width:38px;
+    text-align:center;
+  }
+
+  .warn-banner{
+    background:rgba(180,87,63,.14);
+    border:1px solid rgba(180,87,63,.5);
+    color:var(--paper);
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    line-height:1.6;
+    padding:12px 16px;
+    border-radius:2px;
+    margin-bottom:16px;
+  }
+  .warn-banner strong{ color:var(--ebb); font-weight:400; }
+
+  .addrow{ margin-top:12px; display:flex; gap:8px; }
+
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:720px){ .cols{ grid-template-columns:1fr; } }
+
+  .dir-card{
+    border:1px solid var(--line);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .dir-head{
+    padding:14px 18px;
+    font-family:'Courier New', monospace;
+    letter-spacing:.06em;
+  }
+  .dir-head .dir{ font-size:18px; color:var(--paper); }
+  .dir-head .route{ font-size:15px; color:var(--paper-dim); margin-top:2px;}
+  .north .dir-head{ background:linear-gradient(90deg, rgba(90,143,123,.18), transparent); border-bottom:1px solid var(--line);}
+  .south .dir-head{ background:linear-gradient(90deg, rgba(180,87,63,.18), transparent); border-bottom:1px solid var(--line);}
+
+  .result-block{ padding:16px 18px; border-bottom:1px solid var(--line); }
+  .result-block:last-child{ border-bottom:none; }
+  .rb-title{
+    font-size:15px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--brass-bright); font-family:'Courier New', monospace;
+    margin-bottom:10px;
+  }
+  .entry{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:6px 0;
+    border-bottom:1px dashed rgba(241,233,216,.08);
+  }
+  .entry:last-child{ border-bottom:none; }
+  .entry .label{
+    font-family: Georgia, serif;
+    font-size:17px;
+    color:var(--paper);
+    text-transform:none;
+    letter-spacing:0;
+    margin-bottom:0;
+  }
+  .entry .time{
+    font-family:'Courier New', monospace;
+    font-size:18px;
+    color:var(--brass-bright);
+    font-weight:bold;
+    letter-spacing:.02em;
+  }
+  .entry .accy{
+    font-family:'Courier New', monospace;
+    font-size:14px;
+    color:var(--paper-dim);
+    margin-left:8px;
+  }
+  .empty-note{
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    color:var(--paper-dim);
+    font-style:italic;
+  }
+  .window-note{
+    font-family:'Courier New', monospace;
+    font-size:15px;
+    color:var(--paper-dim);
+    margin-top:8px;
+    line-height:1.5;
+  }
+
+  footer{
+    margin-top:40px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-family:'Courier New', monospace;
+    font-size:15px;
+    color:var(--paper-dim);
+    line-height:1.7;
+  }
+  footer strong{ color:var(--brass-bright); font-weight:400; }
+  a{ color:var(--brass-bright); }
+
+  .helptext{
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    color:var(--paper-dim);
+    margin-top:4px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Smart Sailing &nbsp;·&nbsp; Passage Planning</p>
+    <h1>East River — <em>Timing Your Passage</em></h1>
+    <p class="sub">Recommended entry times at The Battery (northbound) or Throgs Neck (southbound) for a fair current the full length of the river, using NOAA's Battery tide predictions and the 1h45m rule of thumb. Hell Gate no longer has an official long-range current table, so this is the simplified, Battery-only method.</p>
+  </header>
+
+  <section>
+    <div class="section-title"><span class="step-no">1</span>&nbsp; Date</div>
+    <div class="panel">
+      <div class="row">
+        <div>
+          <label for="dateInput">From date</label>
+          <span class="row" style="gap:8px; align-items:center">
+            <input type="date" id="dateInput">
+            <span class="dow" id="fromDow">—</span>
+          </span>
+        </div>
+        <div>
+          <label for="toDateInput">To date <span style="text-transform:none;letter-spacing:0">(optional — leave blank for a single day)</span></label>
+          <span class="row" style="gap:8px; align-items:center">
+            <input type="date" id="toDateInput">
+            <span class="dow" id="toDow">—</span>
+          </span>
+        </div>
+        <button class="ghost tiny" id="reloadBtn">Reload table(s) from server</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><span class="step-no">2</span>&nbsp; Recommended entry times</div>
+
+    <div class="warn-banner" id="coverageWarning" style="display:none"></div>
+
+    <div class="cols" id="resultsSingle">
+      <div class="dir-card north">
+        <div class="dir-head">
+          <div class="dir">Northbound — NYC → LIS</div>
+          <div class="route">Enter East River at The Battery</div>
+        </div>
+        <div class="result-block">
+          <div class="rb-title">Fair current, full length of river</div>
+          <div id="northFair"></div>
+        </div>
+      </div>
+
+      <div class="dir-card south">
+        <div class="dir-head">
+          <div class="dir">Southbound — LIS → NYC</div>
+          <div class="route">Enter East River at Throgs Neck</div>
+        </div>
+        <div class="result-block">
+          <div class="rb-title">Fair current, full length of river</div>
+          <div id="southFair"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="resultsRange" style="display:none">
+      <table class="evt">
+        <thead><tr><th style="width:120px">Date</th><th style="width:60px">Day</th><th>Northbound (Battery)</th><th>Southbound (Throgs Neck)</th></tr></thead>
+        <tbody id="rangeBody"></tbody>
+      </table>
+      <p class="helptext">Clear "To date" above to switch back to single-day mode, which also lets you inspect or override individual tide events.</p>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <button id="downloadCsvBtn">Download CSV for this range</button>
+      <span class="fetch-status" id="csvStatus"></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><span class="step-no">3</span>&nbsp; Battery tide table (loaded once per year, refreshed once/twice a year)</div>
+    <div class="panel">
+      <p class="helptext" style="margin-top:0">
+        Files live alongside this HTML file on the server and load automatically — no upload step, no browser storage.
+        Use <code>{YEAR}</code> in the path to load a different file per calendar year (each is NOAA's own annual export, so this is the natural way to split them). A date near Dec 31/Jan 1 pulls whichever file matches its own year — no manual switching needed.
+      </p>
+      <table class="evt" style="margin-top:4px">
+        <thead><tr><th style="width:170px">File</th><th>Path</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge H">Battery tides</span></td>
+            <td style="font-family:'Courier New',monospace"><input type="text" id="batteryPath" value="8518750_annual_{YEAR}.xml" style="width:100%;background:transparent;border:none;color:var(--paper);font-family:inherit;font-size:16px;"></td>
+            <td class="fetch-status" id="batteryLoadStatus" style="margin:0">—</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="helptext">
+        Accepts NOAA's high/low tide predictions as downloaded, in <strong>.txt, .xml, or .csv</strong> — the file extension doesn't matter (tested directly against NOAA's annual XML export). Source: NOAA's data API —
+        <span style="word-break:break-all">https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&amp;begin_date={YEAR}0101&amp;end_date={YEAR}1231&amp;datum=MLLW&amp;station=8518750&amp;time_zone=lst_ldt&amp;units=english&amp;interval=hilo&amp;format=xml</span>
+        — save each year's response as its own file, e.g. <code>8518750_annual_2026.xml</code>, <code>8518750_annual_2027.xml</code>.
+      </p>
+    </div>
+  </section>
+
+  <section id="batteryEventsSection">
+    <div class="section-title"><span class="step-no">4</span>&nbsp; Battery tide events for this date</div>
+    <div class="panel">
+      <table class="evt" id="batteryTable">
+        <thead><tr><th style="width:70px">Type</th><th>Time</th><th></th></tr></thead>
+        <tbody id="batteryBody"></tbody>
+      </table>
+      <div class="addrow">
+        <select id="battType"><option value="H">High Water</option><option value="L">Low Water</option></select>
+        <input type="time" id="battTime">
+        <button class="tiny" id="addBattery">+ Add event</button>
+      </div>
+      <p class="helptext">Rows are read from the loaded table for the selected date. Edit or add rows manually for a one-off override.</p>
+    </div>
+  </section>
+
+  <footer>
+    <strong>Notes</strong><br>
+    Rule of thumb: enter the East River 1h45m after Low Water at The Battery northbound, or 1h45m after High Water at The Battery southbound (enter at Throgs Neck). A ~7 kt boat then carries a fair current roughly 3 hours from that departure time; faster vessels get a longer window but risk outrunning the current if they depart too early.<br>
+    NOAA's printed tide tables do not always correct for Daylight Saving Time — verify DST is applied when reading times, especially from data pulled outside the NOAA API's <code>lst_ldt</code> time zone.<br>
+    Source: East River – Timing Your Passage (fair current rule of thumb).
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // ---------- state ----------
+  let battery = [];    // {type:'H'|'L', mins:Number} -- for the selected date only
+
+  // ---------- time helpers ----------
+  function toMins(hhmm){
+    const [h,m] = hhmm.split(':').map(Number);
+    return h*60+m;
+  }
+  function toMins12(str){
+    const m = str.trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/);
+    if(!m) return null;
+    let h = parseInt(m[1],10);
+    const mm = parseInt(m[2],10);
+    const ap = m[3].toUpperCase();
+    if(ap==='AM'){ if(h===12) h=0; } else { if(h!==12) h+=12; }
+    return h*60+mm;
+  }
+  function toMinsFlexible(str){
+    const t = str.trim();
+    if(/[AaPp][Mm]$/.test(t)) return toMins12(t);
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    if(!m) return null;
+    return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  }
+
+  // ---------- XML handling ----------
+  // NOAA's XML exports use self-closing tags with varying attribute names
+  // (<pr t="..." v="..." type="H" />, etc). Rather than hardcode attribute
+  // names, pull every attribute VALUE out of each tag and feed them through
+  // the same line-based regex parsers used for txt/csv — schema-agnostic.
+  function looksLikeXML(text){
+    return /^\s*</.test(text);
+  }
+  function mostFrequentTag(text){
+    const counts = {};
+    const re = /<(\w+)(?:\s[^>]*)?>/g;
+    let m;
+    while((m = re.exec(text))){ counts[m[1]] = (counts[m[1]]||0)+1; }
+    let best = null, bestCount = 0;
+    for(const [tag,c] of Object.entries(counts)){ if(c > bestCount){ best = tag; bestCount = c; } }
+    return bestCount >= 2 ? best : null;
+  }
+  function xmlToLines(text){
+    // Case 1: self-closing tags with attributes (<pr t="..." v="..." type="H" />)
+    const selfClosing = text.match(/<[\w:]+\s+[^>]*\/>/g) || [];
+    const lines = [];
+    selfClosing.forEach(tag=>{
+      const attrs = [...tag.matchAll(/="([^"]*)"/g)].map(m=>m[1]);
+      if(attrs.length) lines.push(attrs.join(' '));
+    });
+    if(lines.length) return lines;
+
+    // Case 2: repeating paired-tag records (<item><date>..</date><time>..</time>...</item>)
+    // — this is what NOAA's own predictions-download XML actually uses.
+    const tag = mostFrequentTag(text);
+    if(tag){
+      const blockRe = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'g');
+      let m;
+      while((m = blockRe.exec(text))){
+        const values = m[1].replace(/<[^>]+>/g, '\n').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+        if(values.length) lines.push(values.join(' '));
+      }
+    }
+    if(lines.length) return lines;
+
+    // Case 3: last-resort — strip all tags, one text value per line
+    const stripped = text.replace(/<\?xml[^>]*\?>/g,'').replace(/<[^>]+>/g,'\n');
+    return stripped.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  }
+  function toLines(text){
+    return looksLikeXML(text) ? xmlToLines(text) : text.split(/\r?\n/);
+  }
+  function fmt(mins){
+    let dayOffset = 0;
+    let m = mins;
+    while(m < 0){ m += 1440; dayOffset -= 1; }
+    while(m >= 1440){ m -= 1440; dayOffset += 1; }
+    const h = Math.floor(m/60), mm = m%60;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    let h12 = h % 12; if(h12===0) h12=12;
+    const timeStr = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+    if(dayOffset === 0) return timeStr;
+    return timeStr + (dayOffset>0 ? ' (+1 day)' : ' (−1 day)');
+  }
+  function todayISO(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+  $('dateInput').value = todayISO();
+
+  function dayAbbr(dateISO){
+    const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const d = new Date(dateISO + 'T00:00:00Z');
+    if(isNaN(d.getTime())) return '—';
+    return names[d.getUTCDay()];
+  }
+  function updateDowLabels(){
+    $('fromDow').textContent = $('dateInput').value ? dayAbbr($('dateInput').value) : '—';
+    $('toDow').textContent = $('toDateInput').value ? dayAbbr($('toDateInput').value) : '—';
+  }
+  $('dateInput').addEventListener('input', updateDowLabels);
+  $('toDateInput').addEventListener('input', updateDowLabels);
+  updateDowLabels();
+
+  // ---------- parse battery_tides.csv ----------
+  // Tolerant of NOAA's datagetter CSV/JSON-style export or a hand-rolled file.
+  // Looks for: a date, a time (12h or 24h), and an H/L (or High/Low) token on each line.
+  function parseBatteryFile(text){
+    const lines = toLines(text);
+    const byDate = {};
+    let count = 0, skipped = 0;
+
+    lines.forEach(line=>{
+      const t = line.trim();
+      if(!t || t.startsWith('#')) return;
+      const m = t.match(/(\d{4}[-\/]\d{2}[-\/]\d{2})[,\s]+.*?(\d{1,2}:\d{2}\s*(?:[APap][Mm])?)[,\s]+.*?\b(High|Low|H|L)\b/i);
+      if(!m){ skipped++; return; }
+      const dateISO = m[1].replace(/\//g,'-');
+      const mins = toMinsFlexible(m[2]);
+      const typeRaw = m[3].toUpperCase();
+      const type = typeRaw.startsWith('H') ? 'H' : 'L';
+      if(mins===null){ skipped++; return; }
+      if(!byDate[dateISO]) byDate[dateISO] = [];
+      byDate[dateISO].push({type, mins});
+      count++;
+    });
+
+    if(count === 0) return { error: 'No recognizable rows found (expected a date, a time, and H/L on each line).' };
+    const dates = Object.keys(byDate).sort();
+    return { byDate, rangeStart: dates[0], rangeEnd: dates[dates.length-1], count, skipped };
+  }
+
+  // ---------- load battery tide file(s) from the server, one per year ----------
+  const yearCache = {}; // year (string) -> parsed table result
+
+  async function loadYear(year){
+    const statusEl = $('batteryLoadStatus');
+    const template = $('batteryPath').value.trim();
+    const path = template.includes('{YEAR}') ? template.replace(/{YEAR}/g, year) : template;
+    statusEl.textContent = 'Loading ' + path + '…';
+    statusEl.className = 'fetch-status';
+    try{
+      const res = await fetch(path + (path.includes('?') ? '&' : '?') + 'cb=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const result = parseBatteryFile(text);
+      if(result.error) throw new Error(result.error);
+      yearCache[year] = result;
+      statusEl.textContent = `${path} — ${result.count} events, ${result.rangeStart} to ${result.rangeEnd}${result.skipped ? ` (${result.skipped} lines skipped)` : ''}.`;
+      statusEl.className = 'fetch-status ok';
+      return result;
+    }catch(err){
+      statusEl.textContent = `Not loaded (${path}): ${err.message}. Add events manually below, or check the path/year file exists on the server.`;
+      statusEl.className = 'fetch-status err';
+      yearCache[year] = null;
+      return null;
+    }
+  }
+
+  async function getYearTable(year){
+    let table = yearCache[year];
+    if(table === undefined) table = await loadYear(year);
+    return table; // may be null if that year's file failed to load
+  }
+
+  async function getEventsForDate(dateISO){
+    const year = dateISO.slice(0,4);
+    const table = await getYearTable(year);
+    return (table && table.byDate[dateISO]) ? table.byDate[dateISO].map(e=>({...e})) : [];
+  }
+
+  // Checks whether every date in `dates` falls within the loaded table's
+  // actual coverage (rangeStart–rangeEnd) for its year, not just whether
+  // that year's file exists. Returns uncovered dates plus a summary of
+  // what IS loaded, for the warning banner.
+  async function checkCoverage(dates){
+    const uncovered = [];
+    const loadedRanges = [];
+    const seenYears = new Set();
+    for(const d of dates){
+      const year = d.slice(0,4);
+      const table = await getYearTable(year);
+      if(!seenYears.has(year)){
+        seenYears.add(year);
+        if(table) loadedRanges.push({ year, start: table.rangeStart, end: table.rangeEnd });
+      }
+      const covered = !!(table && d >= table.rangeStart && d <= table.rangeEnd);
+      if(!covered) uncovered.push(d);
+    }
+    return { uncovered, loadedRanges };
+  }
+
+  function renderCoverageWarning(uncovered, loadedRanges){
+    const el = $('coverageWarning');
+    if(uncovered.length === 0){ el.style.display = 'none'; el.innerHTML = ''; return; }
+    const coverageText = loadedRanges.length
+      ? loadedRanges.map(r=>`${r.start} to ${r.end}`).join('; ')
+      : 'none — no tide table loaded for the relevant year(s)';
+    const dateText = uncovered.length === 1
+      ? uncovered[0]
+      : `${uncovered.length} dates (${uncovered[0]} to ${uncovered[uncovered.length-1]})`;
+    const verb = uncovered.length === 1 ? 'falls' : 'fall';
+    el.innerHTML = `<strong>Outside loaded data:</strong> ${dateText} ${verb} outside the loaded tide table's coverage. Loaded coverage: ${coverageText}. Results for those dates rely on manually entered events only.`;
+    el.style.display = '';
+  }
+
+  function dateRangeArray(fromISO, toISO){
+    const out = [];
+    const d = new Date(fromISO + 'T00:00:00Z');
+    const end = new Date(toISO + 'T00:00:00Z');
+    while(d <= end){
+      out.push(d.toISOString().slice(0,10));
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+    return out;
+  }
+
+  // ---------- render event table (single-day, editable) ----------
+  function renderBattery(){
+    battery.sort((a,b)=>a.mins-b.mins);
+    const tbody = $('batteryBody');
+    tbody.innerHTML = '';
+    if(battery.length===0){
+      tbody.innerHTML = `<tr><td colspan="3" class="empty-note">No events for this date in the loaded table — add manually.</td></tr>`;
+    }
+    battery.forEach((ev,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge ${ev.type}">${ev.type==='H'?'High':'Low'}</span></td>
+        <td style="font-family:'Courier New',monospace">${fmt(ev.mins)}</td>
+        <td><button class="tiny ghost" data-i="${i}" data-tbl="b">Remove</button></td>`;
+      tbody.appendChild(tr);
+    });
+    renderSingleDayResults(battery);
+  }
+
+  document.body.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tbl="b"]');
+    if(!btn) return;
+    battery.splice(Number(btn.dataset.i),1);
+    renderBattery();
+  });
+
+  $('addBattery').addEventListener('click', ()=>{
+    const t = $('battTime').value;
+    if(!t) return;
+    battery.push({type:$('battType').value, mins:toMins(t)});
+    $('battTime').value = '';
+    renderBattery();
+  });
+
+  // ---------- computation: fair current, 1h45m rule only ----------
+  function computeEntries(events){
+    const lows  = events.filter(e=>e.type==='L');
+    const highs = events.filter(e=>e.type==='H');
+    return {
+      north: lows.map(l=>({ref:'Low Water', refMins:l.mins, entryMins:l.mins+105})),
+      south: highs.map(h=>({ref:'High Water', refMins:h.mins, entryMins:h.mins+105}))
+    };
+  }
+  function entryRow(label, mins){
+    return `<div class="entry"><span class="label">${label}</span><span class="time">${fmt(mins)}</span></div>`;
+  }
+  function emptyRow(msg){
+    return `<div class="empty-note">${msg}</div>`;
+  }
+
+  function renderSingleDayResults(events){
+    const {north, south} = computeEntries(events);
+    $('northFair').innerHTML = north.length
+      ? north.map(n=>entryRow('Depart Battery, Low Water + 1h45m', n.entryMins)).join('')
+      : emptyRow('Add Battery low water above.');
+    $('southFair').innerHTML = south.length
+      ? south.map(s=>entryRow('Depart Throgs Neck, High Water + 1h45m', s.entryMins)).join('')
+      : emptyRow('Add Battery high water above.');
+  }
+
+  function renderRangeResults(rows){
+    const tbody = $('rangeBody');
+    tbody.innerHTML = '';
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      const nCell = r.north.length ? r.north.map(fmt).join(', ') : '—';
+      const sCell = r.south.length ? r.south.map(fmt).join(', ') : '—';
+      tr.innerHTML = `<td style="font-family:'Courier New',monospace">${r.date}</td><td style="font-family:'Courier New',monospace">${dayAbbr(r.date)}</td><td>${nCell}</td><td>${sCell}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------- mode switch: single day vs date range ----------
+  function currentRange(){
+    const fromISO = $('dateInput').value;
+    let toISO = $('toDateInput').value || fromISO;
+    if(toISO < fromISO){ toISO = fromISO; $('toDateInput').value = ''; }
+    return { fromISO, toISO, isRange: toISO !== fromISO };
+  }
+
+  async function refresh(){
+    const { fromISO, toISO, isRange } = currentRange();
+    updateDowLabels();
+    $('resultsSingle').style.display = isRange ? 'none' : '';
+    $('resultsRange').style.display = isRange ? '' : 'none';
+    $('batteryEventsSection').style.display = isRange ? 'none' : '';
+
+    const dates = isRange ? dateRangeArray(fromISO, toISO) : [fromISO];
+    const { uncovered, loadedRanges } = await checkCoverage(dates);
+    renderCoverageWarning(uncovered, loadedRanges);
+
+    if(!isRange){
+      battery = await getEventsForDate(fromISO);
+      renderBattery(); // also renders single-day results
+    } else {
+      const rows = [];
+      for(const d of dates){
+        const events = await getEventsForDate(d);
+        const { north, south } = computeEntries(events);
+        rows.push({ date: d, north: north.map(n=>n.entryMins), south: south.map(s=>s.entryMins) });
+      }
+      renderRangeResults(rows);
+    }
+  }
+
+  async function loadAll(){
+    for(const k of Object.keys(yearCache)) delete yearCache[k]; // clear cache, force re-fetch
+    await refresh();
+  }
+
+  $('dateInput').addEventListener('change', refresh);
+  $('toDateInput').addEventListener('change', refresh);
+  $('reloadBtn').addEventListener('click', loadAll);
+
+  // ---------- CSV export ----------
+  $('downloadCsvBtn').addEventListener('click', async ()=>{
+    const statusEl = $('csvStatus');
+    const { fromISO, toISO } = currentRange();
+    statusEl.textContent = 'Building CSV…';
+    statusEl.className = 'fetch-status';
+    try{
+      const dates = dateRangeArray(fromISO, toISO);
+      const lines = ['Date,Direction,Reference,ReferenceTime,EntryTime'];
+      for(const d of dates){
+        const events = await getEventsForDate(d);
+        const { north, south } = computeEntries(events);
+        if(!north.length && !south.length){
+          lines.push(`${d},,,,No tide data`);
+          continue;
+        }
+        north.forEach(n=> lines.push(`${d},North,Low Water,${fmt(n.refMins)},${fmt(n.entryMins)}`));
+        south.forEach(s=> lines.push(`${d},South,High Water,${fmt(s.refMins)},${fmt(s.entryMins)}`));
+      }
+      const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `east_river_entry_times_${fromISO}_to_${toISO}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      statusEl.textContent = `Downloaded ${dates.length} date(s).`;
+      statusEl.className = 'fetch-status ok';
+    }catch(err){
+      statusEl.textContent = 'Could not build CSV: ' + err.message;
+      statusEl.className = 'fetch-status err';
+    }
+  });
+
+  // ---------- init ----------
+  loadAll();
+})();
+</script>
+</body>
+</html>

@@ -6,26 +6,25 @@ the full length of the river.
 
 ## Live deployment
 
-Unlike the Blue Horizon Sailing tools, this one is hosted on a different server —
-GBR, not the Blue Horizon Sailing site:
+Hosted on GitHub Pages:
 
 ```
-https://burgeeregister.org/east_river/east_river_timing.html
+https://apps.garcez.net/east-river-passage-planner/
 ```
 
-Files live in `public_html/east_river/` on the GBR server:
+Files served from the repo root:
 
 ```
-public_html/east_river/
-├── east_river_passage_planner.html
-├── 8518750_annual_2026.xml
-└── 8518750_annual_2027.xml
+index.html                      (copy of east_river_passage_planner.html)
+east_river_passage_planner.html
+8518750_annual_2026.xml
+8518750_annual_2027.xml
 ```
 
-Updating the tool or a year's tide file is a straight file replace in that folder —
-no build step, no restart. Data files are fetched fresh on every page load
-(cache-busted), so a replaced file takes effect immediately without needing to
-clear browser cache.
+Updating the tool or a year's tide file is a commit to `main`; Pages redeploys
+automatically. Keep `index.html` identical to `east_river_passage_planner.html`.
+Data files are fetched fresh on every page load (cache-busted), so a replaced file
+takes effect immediately without needing to clear browser cache.
 
 ## Method
 
